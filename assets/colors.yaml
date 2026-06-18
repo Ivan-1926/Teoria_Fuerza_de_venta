@@ -1,0 +1,28 @@
+# Paleta de colores inspirada en la imagen proporcionada
+# Amarillo y azul como colores principales
+
+primary:
+  name: "Primary Blue"
+  hex: "#003F7D"
+
+accent:
+  name: "Primary Yellow"
+  hex: "#FFD400"
+
+background:
+  name: "Background"
+  hex: "#F7F9FB"
+
+status:
+  sent:
+    name: "Enviado"
+    hex: "#1976D2"
+  committee:
+    name: "Comité"
+    hex: "#FFA000"
+  approved:
+    name: "Aprobado"
+    hex: "#2E7D32"
+  disbursed:
+    name: "Desembolsado"
+    hex: "#6A1B9A"

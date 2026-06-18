@@ -1,0 +1,40 @@
+name: app_pichincha_fuerza_de_venta
+description: "App Fuerza de Ventas – Oficiales de Crédito – Banco Pichincha"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^0.13.6
+  image_picker: ^0.8.7+4
+  camera: ^0.11.0+2
+  flutter_image_compress: ^2.3.0
+  image: ^4.2.0
+  photo_view: ^0.15.0
+  path: ^1.9.0
+  shared_preferences: ^2.1.1
+  connectivity_plus: ^6.0.3
+  url_launcher: ^6.3.0
+  path_provider: ^2.1.3
+  supabase_flutter: ^2.6.0
+  flutter_riverpod: ^2.5.1
+  flutter_secure_storage: ^9.2.4
+  google_maps_flutter: ^2.6.1
+  geolocator: ^12.0.0
+  geocoding: ^3.0.0
+  sqflite: ^2.3.3
+  signature: ^5.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
