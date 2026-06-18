@@ -5,7 +5,7 @@ Stack: Flutter + Riverpod + Supabase (REST/Auth) + SQLite (offline)
 
 | # | Criterio | Nivel | Pts | Evidencia |
 |---|----------|-------|-----|-----------|
-| 1 | Integración E2E (FV → Core → App Clientes) | Excelente | **4/4** | Trigger `trg_fv_publicar_aprobacion` sobre `credit_applications`: al pasar a `aprobado`/`desembolsado` publica evento en `sync_outbox` (DNI del cliente). La app cliente lo consume con `rpc_procesar_sync_outbox` y refleja crédito + cronograma + notificación + movimiento. `sync_log` deja traza. |
+| 1 | Integración E2E (FV → Core → App Clientes) | Excelente | **4/4** | Trigger `trg_fv_publicar_aprobacion` sobre `fv_credit_applications`: al pasar a `aprobado`/`desembolsado` publica evento en `sync_outbox` (DNI del cliente). La app cliente lo consume con `rpc_procesar_sync_outbox` y refleja crédito + cronograma + notificación + movimiento. `sync_log` deja traza. **Verificado en vivo:** aprobar una solicitud genera automáticamente la fila en `sync_outbox` y `sync_log`. |
 | 2 | App Fuerza de Ventas — originación | Excelente | **4/4** | Cartera del día priorizada (`daily_portfolio`), ruta con GPS (`geolocator`, `route_visits`), ficha de cliente con semáforo de mora, consulta de buró (SBS + lista negra), pre-evaluación, wizard de solicitud (datos → negocio → simulador cronograma → firma digital `signature`), expediente de documentos (cámara + nitidez), cola offline (`sqflite` + `SyncManager` + `connectivity_plus`). |
 | 4 | Seguridad RBAC (JWT + roles) | Excelente | **4/4** | Supabase Auth (JWT). `flutter_secure_storage` guarda access/refresh token. Roles `asesor`/`supervisor`/`admin` en `asesores_negocio`. Bloqueo tras **5 intentos** (`rpc_fv_registrar_intento` + `locked_until`). RLS por rol (`fn_rol_actual`): asesor ve sólo lo suyo, supervisor/admin ven todo. |
 | 5 | Calidad de datos, arquitectura y documentación | Excelente | **4/4** | SQL versionado (`schema_and_seed.sql`, `02_rubrica_integracion.sql`). Capas `models`/`repositories`/`providers`/`services`/`screens`. Integridad referencial (FK a `clients`). Seed coherente (clientes con mora, lista negra, solicitudes en distintos estados). Ver `docs/ARQUITECTURA.md`. |
@@ -37,12 +37,22 @@ where client_dni = '72345678';
 
 ## Roles de prueba (RBAC)
 
-| Email | Rol | Permisos |
-|-------|-----|----------|
-| `demo@pichincha.com` | supervisor | Ve toda la cartera y puede aprobar |
-| `asesor@pichincha.com` | asesor | Sólo sus clientes y solicitudes |
+El rol se deriva automáticamente de la columna real `nivel` de `asesores_negocio`
+(idempotente, ver `02_rubrica_integracion.sql`):
 
-> Para login real con Supabase Auth, crear el usuario en Authentication con el mismo `id` que la fila de `asesores_negocio`. El login demo (`demo@pichincha.com` / `pichincha123`) queda como respaldo offline.
+| Regla de mapeo | Rol | Permisos | Conteo real |
+|----------------|-----|----------|-------------|
+| `nivel = 'Senior II'` | supervisor | Ve toda la cartera y puede aprobar | 89 |
+| Primer asesor (`min(id)`) | admin | Acceso total | 1 |
+| Resto de niveles | asesor | Sólo sus clientes y solicitudes | 270 |
+
+Ejemplos de emails reales en la base: `lui.flores1@asesores.pe` (id 1 → admin),
+asesores Senior II → supervisor, Junior I/II → asesor.
+
+> El rol se resuelve por el email del JWT con `fn_rol_actual()` (`auth.email()`),
+> porque `asesores_negocio` usa `id` entero y no se enlaza por `uuid`.
+> La capa anónima (publishable key) sigue activa para la demo; las políticas RLS
+> por rol aplican a sesiones `authenticated`.
 
 ## Scripts SQL
 
