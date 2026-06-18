@@ -342,10 +342,6 @@ class _RouteMapViewState extends State<_RouteMapView> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.routeState.isLoading && widget.routeState.visits.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return GoogleMap(
       key: const ValueKey('route_map'),
       onMapCreated: (controller) {

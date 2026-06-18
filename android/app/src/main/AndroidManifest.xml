@@ -9,9 +9,9 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
-        <!-- Google Maps API Key Placeholder -->
+        <!-- Google Maps API Key (Maps SDK + habilitar Directions API en Cloud Console) -->
         <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_MAPS_API_KEY"/>
+            android:value="AIzaSyBIZrptkE0IGakPhzMzMpq4PaW_gw_D1vk"/>
 
         <activity
             android:name=".MainActivity"

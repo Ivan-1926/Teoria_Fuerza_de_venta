@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../utils/format_utils.dart';
 import '../models/route_visit_model.dart';
 import '../repositories/route_repository.dart';
+import '../services/google_directions_service.dart';
 import 'auth_notifier.dart';
 
 class RoutePlannerState {
@@ -52,25 +53,28 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
       : super(const RoutePlannerState());
 
   Future<void> loadRoutePlanner() async {
-    // 1. Verify active advisor status
     final isActive = await _authNotifier.verifyActiveStatus();
-    if (!isActive) return;
+    if (!isActive) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Sesión no activa. Inicia sesión nuevamente.',
+      );
+      return;
+    }
 
     final advisorId = _authNotifier.state.advisor?.id ?? '';
     if (advisorId.isEmpty) {
-      state = state.copyWith(errorMessage: 'Sesión no iniciada.');
+      state = state.copyWith(isLoading: false, errorMessage: 'Sesión no iniciada.');
       return;
     }
 
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      // 2. Fetch current geolocation
       Position? position;
       try {
         position = await _determinePosition();
       } catch (_) {
-        // Fallback mock position (Quito Center) for emulation or denied permission
         position = Position(
           latitude: -0.180653,
           longitude: -78.467838,
@@ -85,7 +89,6 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
         );
       }
 
-      // 3. Fetch visits from Supabase
       final todayStr = FormatUtils.dateYmd(DateTime.now());
       final data = await _repository.fetchRouteVisits(todayStr, officerId: advisorId);
 
@@ -95,8 +98,7 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
         currentPosition: position,
       );
 
-      // 4. Build Markers and Polylines
-      _buildMapLayers();
+      await _buildMapLayers();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -120,7 +122,7 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
       }).toList();
 
       state = state.copyWith(visits: updatedVisits);
-      _buildMapLayers();
+      await _buildMapLayers();
     } catch (e) {
       state = state.copyWith(errorMessage: 'Error al marcar como completado: $e');
     }
@@ -194,13 +196,12 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
     }
   }
 
-  void _buildMapLayers() {
+  Future<void> _buildMapLayers() async {
     final Set<Marker> markers = {};
-    final List<LatLng> polylinePoints = [];
+    final List<LatLng> stopPoints = [];
 
     final pos = state.currentPosition;
     if (pos != null) {
-      // 1. Advisor Current Location Marker
       markers.add(
         Marker(
           markerId: const MarkerId('current_location'),
@@ -209,14 +210,13 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         ),
       );
-      polylinePoints.add(LatLng(pos.latitude, pos.longitude));
+      stopPoints.add(LatLng(pos.latitude, pos.longitude));
     }
 
-    // 2. Add client markers and construct polyline path
     for (final visit in state.visits) {
       if (visit.lat != null && visit.lng != null) {
         final point = LatLng(visit.lat!, visit.lng!);
-        polylinePoints.add(point);
+        stopPoints.add(point);
 
         final isVisited = visit.visitStatus == 'visited';
         markers.add(
@@ -235,21 +235,43 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
       }
     }
 
-    // 3. Create route path polyline
+    // Línea recta provisional mientras llega Directions API
     final Set<Polyline> polylines = {};
-    if (polylinePoints.length > 1) {
+    if (stopPoints.length > 1) {
       polylines.add(
         Polyline(
-          polylineId: const PolylineId('route_path'),
-          points: polylinePoints,
-          color: const Color(0xFF003F7D), // Pichincha Blue
-          width: 5,
-          jointType: JointType.round,
+          polylineId: const PolylineId('route_path_fallback'),
+          points: stopPoints,
+          color: const Color(0xFF003F7D).withOpacity(0.35),
+          width: 3,
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)],
         ),
       );
     }
 
     state = state.copyWith(markers: markers, polylines: polylines);
+
+    // Ruta real por calles (Google Directions API)
+    if (stopPoints.length >= 2) {
+      try {
+        final routePoints = await GoogleDirectionsService.fetchDrivingRoute(stopPoints);
+        if (routePoints.isNotEmpty) {
+          state = state.copyWith(
+            polylines: {
+              Polyline(
+                polylineId: const PolylineId('directions_route'),
+                points: routePoints,
+                color: const Color(0xFF003F7D),
+                width: 5,
+                jointType: JointType.round,
+              ),
+            },
+          );
+        }
+      } catch (_) {
+        // Se mantiene la línea punteada de respaldo.
+      }
+    }
   }
 
   // Geolocator permissions checking helper
@@ -274,7 +296,10 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
       throw Exception('Los permisos de ubicación están denegados permanentemente.');
     }
 
-    return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.medium,
+      timeLimit: const Duration(seconds: 8),
+    );
   }
 
   // Haversine formula calculation (spherical distance in kilometers)
