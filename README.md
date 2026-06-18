@@ -30,7 +30,7 @@ Luego crea el bucket **documents** (público) en Storage para fotos de expedient
 | `asesor@pichincha.com` | **asesor** | `Docente2025!` | Login real Supabase Auth (botón en pantalla de login) |
 | `supervisor@pichincha.com` | supervisor | `Docente2025!` | Aprueba en **web** (`web_fuerza_de_venta`) |
 
-Ver credenciales completas (cliente Caso 1, SQL, flujo): repo web → `CREDENCIALES_DEMO.md`.
+Ver credenciales completas (cliente Caso 1, SQL, flujo): repo web → [`CREDENCIALES_DEMO.md`](https://github.com/Ivan-1926/web_fuerza_de_venta/blob/main/CREDENCIALES_DEMO.md).
 
 ## Documentación rúbrica
 

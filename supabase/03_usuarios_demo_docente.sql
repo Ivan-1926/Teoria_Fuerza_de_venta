@@ -11,7 +11,7 @@
 -- PASO B: ejecutar este script (asigna roles en asesores_negocio).
 --
 -- App móvil FV (respaldo sin Auth): demo@pichincha.com / pichincha123  → rol asesor
--- Web supervisor: no pide login; sesión fija de supervisor en Layout.jsx
+-- Web supervisor: login en /login → supervisor@pichincha.com / Docente2025!
 -- App cliente: registro libre; Caso 1 → DNI 40118120
 -- =============================================================================
 
