@@ -26,12 +26,18 @@ class AsesorNegocioModel {
   factory AsesorNegocioModel.fromMap(Map<String, dynamic> map) {
     return AsesorNegocioModel(
       id: map['id']?.toString() ?? '',
-      codigoEmpleado: map['codigo_empleado']?.toString() ?? '',
+      codigoEmpleado: map['codigo_empleado']?.toString() ??
+          map['codigo']?.toString() ??
+          '',
       nombres: map['nombres']?.toString() ?? '',
       apellidos: map['apellidos']?.toString() ?? '',
-      agenciaId: map['agencia_id']?.toString() ?? '',
-      perfil: map['perfil']?.toString() ?? '',
-      activo: map['activo'] == true,
+      agenciaId: map['agencia_id']?.toString() ??
+          map['id_agencia']?.toString() ??
+          '',
+      perfil: map['perfil']?.toString() ??
+          map['nivel']?.toString() ??
+          '',
+      activo: map['activo'] != false,
       rol: map['rol']?.toString() ?? 'asesor',
     );
   }
