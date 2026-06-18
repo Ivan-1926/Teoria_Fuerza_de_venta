@@ -53,7 +53,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     }
 
     return MaterialApp(
-      title: 'Fuerza de Ventas – Banco Pichincha',
+      title: 'Asesor Ventas',
       theme: appTheme,
       debugShowCheckedModeBanner: false,
       home: homeWidget,
@@ -83,20 +83,20 @@ class _SplashScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: kPrimaryYellow,
+                  color: kBrandWhite,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
-                  Icons.account_balance,
+                  Icons.support_agent,
                   size: 45,
                   color: kPrimaryBlue,
                 ),
               ),
               const SizedBox(height: 24),
               const Text(
-                'BANCO PICHINCHA',
+                'ASESOR VENTAS',
                 style: TextStyle(
-                  color: kPrimaryYellow,
+                  color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
@@ -104,7 +104,7 @@ class _SplashScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Fuerza de Ventas',
+                'Banco Pichincha',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -117,7 +117,7 @@ class _SplashScreen extends StatelessWidget {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: kPrimaryYellow,
+                  color: kBrandWhite,
                 ),
               ),
             ],

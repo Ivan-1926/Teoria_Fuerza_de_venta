@@ -40,6 +40,20 @@ class ApplicationRepository {
     );
   }
 
+  Future<void> changeStatus(String id, String status) async {
+    if (!await pingSupabase()) {
+      throw Exception('Sin conexión con el servidor.');
+    }
+    await updateApplicationStatus(id, status);
+  }
+
+  Future<void> patchApplication(String id, Map<String, dynamic> fields) async {
+    if (!await pingSupabase()) {
+      throw Exception('Sin conexión con el servidor.');
+    }
+    await patchCreditApplication(id, fields);
+  }
+
   Future<({List<Map<String, dynamic>> clients, bool isDemo})> loadClientsForPicker() async {
     if (await pingSupabase()) {
       try {

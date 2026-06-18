@@ -5,7 +5,6 @@ import '../utils/format_utils.dart';
 import '../models/daily_portfolio_model.dart';
 import '../providers/providers.dart';
 import 'client_detail_screen.dart';
-import 'new_application_screen.dart';
 import 'queued_screen.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
@@ -75,7 +74,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
                           icon: Icons.warning_amber,
                           label: '${portfolioState.urgentCount}',
                           sub: 'Urgentes',
-                          color: kPrimaryYellow,
+                          color: kBrandWhite,
                         ),
                         const SizedBox(width: 10),
                         _Stat(
@@ -189,26 +188,14 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           ],
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'queue',
-            backgroundColor: Colors.white,
-            foregroundColor: kPrimaryBlue,
-            onPressed: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const QueuedScreen())),
-            child: const Icon(Icons.cloud_upload_outlined),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton.extended(
-            heroTag: 'new',
-            icon: const Icon(Icons.add),
-            label: const Text('Nueva solicitud'),
-            onPressed: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const NewApplicationScreen())),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'queue',
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const QueuedScreen()),
+        ),
+        tooltip: 'Cola offline',
+        child: const Icon(Icons.cloud_upload_outlined),
       ),
     );
   }

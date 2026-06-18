@@ -5,7 +5,6 @@ import '../providers/providers.dart';
 import '../services/auth_service.dart';
 import 'portfolio_screen.dart';
 import 'route_planner_screen.dart';
-import 'new_application_screen.dart';
 import 'application_status_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
@@ -21,7 +20,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   final List<Widget> _pages = const [
     PortfolioScreen(),
     RoutePlannerScreen(),
-    NewApplicationScreen(),
     ApplicationStatusScreen(),
   ];
 
@@ -33,14 +31,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ),
     _NavItem(icon: Icons.map_outlined, activeIcon: Icons.map, label: 'Ruta'),
     _NavItem(
-      icon: Icons.add_circle_outline,
-      activeIcon: Icons.add_circle,
-      label: 'Solicitud',
-    ),
-    _NavItem(
       icon: Icons.assignment_outlined,
       activeIcon: Icons.assignment,
-      label: 'Estado',
+      label: 'Solicitudes',
     ),
   ];
 
@@ -90,11 +83,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: kPrimaryYellow,
+                color: kBrandWhite,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
-                Icons.account_balance,
+                Icons.support_agent,
                 color: kPrimaryBlue,
                 size: 18,
               ),
@@ -105,7 +98,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Banco Pichincha',
+                    'Asesor Ventas',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -127,7 +120,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: CircleAvatar(
-              backgroundColor: kPrimaryYellow,
+              backgroundColor: kBrandWhite,
               radius: 16,
               child: Text(
                 officerName.isNotEmpty ? officerName[0].toUpperCase() : 'A',

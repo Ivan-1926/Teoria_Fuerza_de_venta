@@ -107,6 +107,7 @@ class DemoDataService {
         status: 'pendiente',
         daysAgo: 0,
         now: now,
+        officerId: null,
       ),
     ];
   }
@@ -121,6 +122,7 @@ class DemoDataService {
     required String status,
     required int daysAgo,
     required DateTime now,
+    String? officerId = 'demo-officer-001',
   }) {
     final submitted = now.subtract(Duration(days: daysAgo));
     final monthly = amount / termMonths * 1.02;
@@ -135,7 +137,7 @@ class DemoDataService {
       'status': status,
       'tea': 18.0,
       'monthly_payment': monthly,
-      'officer_id': 'demo-officer-001',
+      'officer_id': officerId,
       'submitted_at': submitted.toIso8601String(),
       'updated_at': now.toIso8601String(),
     };

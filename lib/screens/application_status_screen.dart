@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/application_model.dart';
 import '../providers/application_status_notifier.dart';
 import '../providers/providers.dart';
-import '../providers/auth_notifier.dart';
 import '../theme.dart';
 import '../utils/format_utils.dart';
 import '../widgets/data_source_banner.dart';
+import '../widgets/application_action_buttons.dart';
 
 class ApplicationStatusScreen extends ConsumerStatefulWidget {
   const ApplicationStatusScreen({super.key});
@@ -83,7 +83,10 @@ class _ApplicationStatusScreenState extends ConsumerState<ApplicationStatusScree
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, i) => _ApplicationCard(app: state.filtered[i]),
+                  (context, i) => _ApplicationCard(
+                    app: state.filtered[i],
+                    updating: state.updatingId == state.filtered[i].id,
+                  ),
                   childCount: state.filtered.length,
                 ),
               ),
@@ -114,7 +117,7 @@ class _HeaderStats extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Estado de solicitudes',
+            'Solicitudes recibidas',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -123,8 +126,28 @@ class _HeaderStats extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${state.applications.length} solicitudes en seguimiento',
+            '${state.applications.length} solicitudes recibidas del cliente',
             style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.white70, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Asesor: acepta y envía a comité. Supervisor: aprueba en la web.',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -178,7 +201,7 @@ class _StatChip extends StatelessWidget {
             Text(
               '$count',
               style: TextStyle(
-                color: color == statusCommittee ? kPrimaryYellow : Colors.white,
+                color: color == statusCommittee ? kBrandWhite : Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -205,6 +228,7 @@ class _FilterChips extends ConsumerWidget {
     ('comite', 'Comité'),
     ('aprobado', 'Aprobadas'),
     ('desembolsado', 'Desembolso'),
+    ('rechazado', 'Rechazadas'),
   ];
 
   @override
@@ -223,7 +247,7 @@ class _FilterChips extends ConsumerWidget {
               onSelected: (_) => ref
                   .read(applicationStatusNotifierProvider.notifier)
                   .setFilter(f.$1),
-              selectedColor: kPrimaryYellow,
+              selectedColor: kBrandWhite,
               checkmarkColor: kPrimaryBlue,
               labelStyle: TextStyle(
                 color: selected ? kPrimaryBlue : Colors.grey.shade700,
@@ -237,12 +261,13 @@ class _FilterChips extends ConsumerWidget {
   }
 }
 
-class _ApplicationCard extends StatelessWidget {
+class _ApplicationCard extends ConsumerWidget {
   final ApplicationModel app;
-  const _ApplicationCard({required this.app});
+  final bool updating;
+  const _ApplicationCard({required this.app, this.updating = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateStr = app.submittedAt != null
         ? '${app.submittedAt!.day}/${app.submittedAt!.month}/${app.submittedAt!.year}'
         : '—';
@@ -375,6 +400,34 @@ class _ApplicationCard extends StatelessWidget {
                       ),
                   ],
                 ),
+                if (app.needsAcceptance)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: kPrimaryBlue.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.fiber_new, size: 16, color: kPrimaryBlue),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Nueva solicitud del cliente — requiere aceptación',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ApplicationActionButtons(app: app, updating: updating),
               ],
             ),
           ),
@@ -400,7 +453,7 @@ class _StatusTimeline extends StatelessWidget {
           return Expanded(
             child: Container(
               height: 3,
-              color: done ? kPrimaryYellow : Colors.grey.shade300,
+              color: done ? kBrandWhite : Colors.grey.shade300,
             ),
           );
         }
@@ -414,7 +467,7 @@ class _StatusTimeline extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: active ? (current ? kPrimaryYellow : kPrimaryBlue) : Colors.grey.shade300,
+                color: active ? (current ? kBrandWhite : kPrimaryBlue) : Colors.grey.shade300,
                 border: current
                     ? Border.all(color: kPrimaryBlue, width: 2)
                     : null,

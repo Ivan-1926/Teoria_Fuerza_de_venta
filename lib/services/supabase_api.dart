@@ -135,12 +135,23 @@ Future<Map<String, dynamic>> createCreditApplication(
 }
 
 Future<void> updateApplicationStatus(String id, String status) async {
+  await patchCreditApplication(id, {'status': status});
+}
+
+Future<void> patchCreditApplication(
+  String id,
+  Map<String, dynamic> fields,
+) async {
+  if (fields.isEmpty) return;
   final url = Uri.parse('$_supabaseUrl/rest/v1/fv_credit_applications?id=eq.$id');
-  await http.patch(
+  final res = await http.patch(
     url,
     headers: _headers(),
-    body: json.encode({'status': status}),
+    body: json.encode(fields),
   );
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception('Error updating application: ${res.statusCode} ${res.body}');
+  }
 }
 
 // ─── ROUTE VISITS ─────────────────────────────────────────────────────────────

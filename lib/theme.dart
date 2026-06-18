@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-// Paleta basada en la imagen proporcionada: amarillo brillante y azul profundo.
-// Colores adicionales para estados de solicitudes.
-
-const Color kPrimaryYellow = Color(0xFFFFD200); // amarillo Pichincha
-const Color kPrimaryBlue = Color(0xFF004B8D); // azul Pichincha
+// Identidad Fuerza de Ventas: azul Pichincha + blanco (diferenciado de app cliente).
+const Color kPrimaryYellow = Color(0xFFFFD200); // acento opcional
+const Color kPrimaryBlue = Color(0xFF004B8D);
+const Color kBrandWhite = Colors.white;
 const Color kAccentYellow = Color(0xFFFFE066);
 const Color kBackground = Color(0xFFF7F9FB);
 const Color kCardShadow = Color(0x1A000000);
@@ -21,7 +20,7 @@ final ThemeData appTheme = ThemeData(
     brightness: Brightness.light,
     primary: kPrimaryBlue,
     onPrimary: Colors.white,
-    secondary: kPrimaryYellow,
+    secondary: kBrandWhite,
     onSecondary: kPrimaryBlue,
     error: Colors.red.shade700,
     onError: Colors.white,
@@ -35,7 +34,7 @@ final ThemeData appTheme = ThemeData(
     elevation: 0,
   ),
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: kPrimaryYellow,
+    backgroundColor: kBrandWhite,
     foregroundColor: kPrimaryBlue,
     elevation: 6,
   ),

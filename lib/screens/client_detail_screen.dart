@@ -5,7 +5,6 @@ import '../utils/format_utils.dart';
 import '../models/client_profile_model.dart';
 import '../providers/providers.dart';
 import '../theme.dart';
-import 'new_application_screen.dart';
 import 'document_capture_screen.dart';
 import 'bureau_screen.dart';
 
@@ -91,7 +90,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         children: [
                           CircleAvatar(
                             radius: 32,
-                            backgroundColor: kPrimaryYellow,
+                            backgroundColor: kBrandWhite,
                             child: Text(
                               profile.initials,
                               style: const TextStyle(
@@ -160,17 +159,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (profile.hasPreApprovedOffer)
-                  _PreApprovedBanner(
-                    amount: profile.preApprovedAmount,
-                    onApply: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NewApplicationScreen(
-                          prefillClient: profile.toMap(),
-                        ),
-                      ),
-                    ),
-                  ),
+                  _PreApprovedBanner(amount: profile.preApprovedAmount),
                 if (profile.hasPreApprovedOffer) const SizedBox(height: 12),
                 _SectionTitle('Datos personales'),
                 _InfoCard(children: [
@@ -222,22 +211,6 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                   children: [
                     Expanded(
                       child: _ActionBtn(
-                        icon: Icons.add_circle_outline,
-                        label: 'Nueva solicitud',
-                        color: kPrimaryBlue,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => NewApplicationScreen(
-                              prefillClient: profile.toMap(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ActionBtn(
                         icon: Icons.credit_score,
                         label: 'Buró',
                         color: const Color(0xFF00796B),
@@ -254,27 +227,26 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: _ActionBtn(
-                    icon: Icons.camera_alt_outlined,
-                    label: 'Documentos',
-                    color: const Color(0xFF6A1B9A),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DocumentCaptureScreen(
-                          clientId: profile.id,
-                          clientDni: profile.dni,
-                          clientName: profile.name,
-                          officerId: officerId,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ActionBtn(
+                        icon: Icons.camera_alt_outlined,
+                        label: 'Documentos',
+                        color: const Color(0xFF6A1B9A),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DocumentCaptureScreen(
+                              clientId: profile.id,
+                              clientDni: profile.dni,
+                              clientName: profile.name,
+                              officerId: officerId,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -396,11 +368,7 @@ class _HeaderAction extends StatelessWidget {
 
 class _PreApprovedBanner extends StatelessWidget {
   final double amount;
-  final VoidCallback onApply;
-  const _PreApprovedBanner({
-    required this.amount,
-    required this.onApply,
-  });
+  const _PreApprovedBanner({required this.amount});
 
   @override
   Widget build(BuildContext context) {
@@ -408,12 +376,12 @@ class _PreApprovedBanner extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [kPrimaryYellow, kPrimaryYellow.withOpacity(0.85)],
+          colors: [kPrimaryBlue, kPrimaryBlue.withValues(alpha: 0.85)],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: kPrimaryYellow.withOpacity(0.35),
+            color: kPrimaryBlue.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -421,7 +389,7 @@ class _PreApprovedBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified, color: kPrimaryBlue, size: 36),
+          const Icon(Icons.verified, color: kBrandWhite, size: 36),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -430,26 +398,22 @@ class _PreApprovedBanner extends StatelessWidget {
                 const Text(
                   'Oferta preaprobada',
                   style: TextStyle(
-                    color: kPrimaryBlue,
+                    color: kBrandWhite,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
                 ),
                 Text(
                   'Hasta ${FormatUtils.usd(amount)}',
-                  style: const TextStyle(color: kPrimaryBlue, fontSize: 13),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'El cliente solicita desde su app móvil.',
+                  style: TextStyle(color: Colors.white60, fontSize: 11),
                 ),
               ],
             ),
-          ),
-          ElevatedButton(
-            onPressed: onApply,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kPrimaryBlue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            ),
-            child: const Text('Solicitar'),
           ),
         ],
       ),

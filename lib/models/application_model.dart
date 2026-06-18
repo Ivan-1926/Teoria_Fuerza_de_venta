@@ -118,6 +118,79 @@ class ApplicationModel {
     }
   }
 
+  bool get isFinalStatus {
+    final s = status.toLowerCase();
+    return s == 'desembolsado' || s == 'rechazado';
+  }
+
+  bool get canBeReviewed {
+    if (isFinalStatus) return false;
+    final s = status.toLowerCase();
+    return s == 'enviado' ||
+        s == 'pendiente' ||
+        s == 'comite' ||
+        s == 'comité' ||
+        s == 'aprobado';
+  }
+
+  bool get canDecide {
+    if (isFinalStatus) return false;
+    final s = status.toLowerCase();
+    return s == 'enviado' ||
+        s == 'pendiente' ||
+        s == 'comite' ||
+        s == 'comité';
+  }
+
+  bool get hasFieldActions {
+    if (needsAcceptance) return true;
+    if (isUnassigned) return false;
+    return canSendToCommittee;
+  }
+
+  bool get awaitsSupervisorDecision {
+    final s = status.toLowerCase();
+    return s == 'comite' || s == 'comité';
+  }
+
+  bool get hasPendingActions => hasFieldActions || awaitsSupervisorDecision;
+
+  ApplicationModel copyWith({String? status, String? officerId}) {
+    return ApplicationModel(
+      id: id,
+      clientId: clientId,
+      clientName: clientName,
+      clientDni: clientDni,
+      amount: amount,
+      termMonths: termMonths,
+      purpose: purpose,
+      monthlyPayment: monthlyPayment,
+      interestRate: interestRate,
+      collateral: collateral,
+      status: status ?? this.status,
+      officerId: officerId ?? this.officerId,
+      notes: notes,
+      documentUrls: documentUrls,
+      submittedAt: submittedAt,
+      updatedAt: updatedAt,
+    );
+  }
+
+  bool get isUnassigned => officerId == null || officerId!.isEmpty;
+
+  bool get needsAcceptance {
+    if (!canBeReviewed) return false;
+    final s = status.toLowerCase();
+    return (s == 'enviado' || s == 'pendiente') && isUnassigned;
+  }
+
+  bool get canSendToCommittee {
+    final s = status.toLowerCase();
+    return s == 'enviado' || s == 'pendiente';
+  }
+
+  bool get canMarkDisbursed => status.toLowerCase() == 'aprobado';
+
   String get statusLabel {
     switch (status.toLowerCase()) {
       case 'pendiente':

@@ -111,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             width: 90,
                             height: 90,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFD400),
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
@@ -122,16 +122,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ],
                             ),
                             child: const Icon(
-                              Icons.account_balance,
+                              Icons.support_agent,
                               size: 50,
                               color: Color(0xFF003F7D),
                             ),
                           ),
                           const SizedBox(height: 20),
                           const Text(
-                            'BANCO PICHINCHA',
+                            'ASESOR VENTAS',
                             style: TextStyle(
-                              color: Color(0xFFFFD400),
+                              color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 2,
@@ -139,11 +139,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Fuerza de Ventas',
+                            'Banco Pichincha · Fuerza de Ventas',
                             style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 15,
-                              letterSpacing: 1,
+                              fontSize: 13,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],

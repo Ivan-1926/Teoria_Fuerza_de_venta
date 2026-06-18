@@ -122,6 +122,7 @@ class AuthRepository {
       agenciaId: '101',
       perfil: 'Oficial de Crédito Principal',
       activo: true,
+      rol: 'asesor',
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_demoSessionKey, json.encode(demoAdvisor.toMap()));

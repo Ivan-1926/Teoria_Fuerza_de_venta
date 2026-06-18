@@ -13,9 +13,9 @@ App Flutter para oficiales de crédito (cartera, ruta, solicitudes, buró, docum
 
 1. `supabase/schema_and_seed.sql`
 2. `supabase/02_rubrica_integracion.sql` ← roles, bloqueo de intentos y puente E2E
+3. `supabase/03_usuarios_demo_docente.sql` ← roles docente (opcional si ya corriste 2)
 
 Luego crea el bucket **documents** (público) en Storage para fotos de expediente.
-
 ## Funcionalidades
 
 - **Originación**: cartera del día, ruta con GPS, ficha de cliente con semáforo de mora, buró (SBS + lista negra), wizard de solicitud (datos → negocio → simulador de cronograma → firma digital), expediente de documentos y **cola offline** con reintento automático.
@@ -24,10 +24,13 @@ Luego crea el bucket **documents** (público) en Storage para fotos de expedient
 
 ## Roles / Login
 
-| Email | Rol | Contraseña (demo) |
-|-------|-----|-------------------|
-| `demo@pichincha.com` | supervisor | `pichincha123` (respaldo offline) |
-| `asesor@pichincha.com` | asesor | (crear en Supabase Auth) |
+| Email | Rol | Contraseña | Uso |
+|-------|-----|------------|-----|
+| `demo@pichincha.com` | **asesor** | `pichincha123` | Demo rápida (botón en login). Aceptar y enviar a comité. |
+| `asesor@pichincha.com` | asesor | `Docente2025!` | Tras crear en Supabase Auth + `03_usuarios_demo_docente.sql` |
+| `supervisor@pichincha.com` | supervisor | `Docente2025!` | Aprueba en **web** (`web_fuerza_de_venta`) |
+
+Ver credenciales completas (cliente Caso 1, SQL, flujo): repo web → `CREDENCIALES_DEMO.md`.
 
 ## Documentación rúbrica
 
@@ -35,6 +38,8 @@ Luego crea el bucket **documents** (público) en Storage para fotos de expedient
 - `docs/ARQUITECTURA.md` — capas, tablas y diagrama E2E
 
 ## Ejecutar la app
+
+Requisitos: Flutter SDK 3.11+, Android Studio o VS Code.
 
 ```bash
 flutter pub get

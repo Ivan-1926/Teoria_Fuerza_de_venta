@@ -5,10 +5,11 @@ import '../repositories/application_repository.dart';
 class ApplicationStatusState {
   final bool isLoading;
   final List<ApplicationModel> applications;
-  final String filter; // todos | enviado | comite | aprobado | desembolsado
+  final String filter; // todos | enviado | comite | aprobado | desembolsado | rechazado
   final bool isDemo;
   final bool supabaseReachable;
   final String? errorMessage;
+  final String? updatingId;
 
   const ApplicationStatusState({
     this.isLoading = false,
@@ -17,10 +18,17 @@ class ApplicationStatusState {
     this.isDemo = false,
     this.supabaseReachable = false,
     this.errorMessage,
+    this.updatingId,
   });
 
   List<ApplicationModel> get filtered {
     if (filter == 'todos') return applications;
+    if (filter == 'enviado') {
+      return applications.where((a) {
+        final s = a.status.toLowerCase();
+        return s == 'enviado' || s == 'pendiente';
+      }).toList();
+    }
     return applications
         .where((a) => a.status.toLowerCase() == filter.toLowerCase())
         .toList();
@@ -37,6 +45,8 @@ class ApplicationStatusState {
     bool? isDemo,
     bool? supabaseReachable,
     String? errorMessage,
+    String? updatingId,
+    bool clearUpdatingId = false,
   }) {
     return ApplicationStatusState(
       isLoading: isLoading ?? this.isLoading,
@@ -45,6 +55,7 @@ class ApplicationStatusState {
       isDemo: isDemo ?? this.isDemo,
       supabaseReachable: supabaseReachable ?? this.supabaseReachable,
       errorMessage: errorMessage,
+      updatingId: clearUpdatingId ? null : (updatingId ?? this.updatingId),
     );
   }
 }
@@ -78,6 +89,58 @@ class ApplicationStatusNotifier extends StateNotifier<ApplicationStatusState> {
 
   void setFilter(String filter) {
     state = state.copyWith(filter: filter);
+  }
+
+  Future<String?> updateApplication(
+    String id, {
+    String? status,
+    String? officerId,
+  }) async {
+    state = state.copyWith(updatingId: id, errorMessage: null);
+    try {
+      final patch = <String, dynamic>{};
+      if (status != null) patch['status'] = status;
+      if (officerId != null) patch['officer_id'] = officerId;
+      if (patch.isEmpty) {
+        state = state.copyWith(clearUpdatingId: true);
+        return null;
+      }
+
+      if (!state.isDemo) {
+        await _repo.patchApplication(id, patch);
+      }
+
+      final updated = state.applications
+          .map(
+            (a) => a.id == id
+                ? a.copyWith(
+                    status: status ?? a.status,
+                    officerId: officerId ?? a.officerId,
+                  )
+                : a,
+          )
+          .toList();
+      state = state.copyWith(
+        applications: updated,
+        clearUpdatingId: true,
+      );
+      return null;
+    } catch (e) {
+      state = state.copyWith(clearUpdatingId: true);
+      return e.toString();
+    }
+  }
+
+  Future<String?> acceptApplication(String id, String officerId) {
+    return updateApplication(
+      id,
+      officerId: officerId,
+      status: 'enviado',
+    );
+  }
+
+  Future<String?> reviewApplication(String id, String newStatus) {
+    return updateApplication(id, status: newStatus);
   }
 }
 
