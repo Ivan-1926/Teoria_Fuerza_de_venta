@@ -7,6 +7,7 @@
 -- ORDEN:
 --   1) Este script (03) → perfiles y roles en asesores_negocio
 --   2) 04_auth_usuarios_demo.sql → usuarios Auth con contraseña Docente2025!
+--   3) 05_ruta_demo_asesor.sql     → visitas de ruta visibles en app móvil
 --
 -- Credenciales tras ejecutar 03 + 04:
 --   asesor@pichincha.com      / Docente2025!  → app móvil Asesor Ventas

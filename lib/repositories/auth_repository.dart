@@ -127,6 +127,16 @@ class AuthRepository {
   }
 
   Future<AsesorNegocioModel> _createAcademicSession(String email) async {
+    try {
+      final fromDb = await getAdvisorProfileByEmail(email);
+      if (fromDb != null && fromDb.activo) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_demoSessionKey);
+        await prefs.setString(_demoSessionKey, json.encode(fromDb.toMap()));
+        return fromDb;
+      }
+    } catch (_) {}
+
     final profile = _knownAcademicProfile(email, 'academic-${email.split('@').first}');
     if (profile == null) {
       throw Exception('Credenciales académicas no reconocidas.');

@@ -12,9 +12,10 @@ class RouteRepository {
         officerId == null || officerId.isEmpty || officerId == 'demo-officer-001';
 
     try {
+      final officerIds = await _resolveOfficerIds(officerId);
       var query = _supabase.from('fv_route_visits').select().eq('visit_date', date);
-      if (officerId != null && officerId.isNotEmpty && officerId != 'demo-officer-001') {
-        query = query.eq('officer_id', officerId);
+      if (officerIds.isNotEmpty) {
+        query = query.inFilter('officer_id', officerIds);
       }
       final data = await query.order('visit_order', ascending: true);
       final visits = data.map<RouteVisitModel>((m) => RouteVisitModel.fromMap(m)).toList();
@@ -28,6 +29,37 @@ class RouteRepository {
       }
       throw Exception('Error al obtener visitas de ruta: ${e.toString()}');
     }
+  }
+
+  /// Acepta id de asesores_negocio, uuid Auth o sesión académica.
+  Future<List<String>> _resolveOfficerIds(String? officerId) async {
+    if (officerId == null || officerId.isEmpty || officerId == 'demo-officer-001') {
+      return const [];
+    }
+
+    final ids = <String>{officerId};
+
+    final authId = _supabase.auth.currentUser?.id;
+    if (authId != null && authId.isNotEmpty) {
+      ids.add(authId);
+    }
+
+    final email = _supabase.auth.currentUser?.email?.trim().toLowerCase();
+    if (email != null && email.isNotEmpty) {
+      try {
+        final row = await _supabase
+            .from('asesores_negocio')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+        final dbId = row?['id']?.toString();
+        if (dbId != null && dbId.isNotEmpty) {
+          ids.add(dbId);
+        }
+      } catch (_) {}
+    }
+
+    return ids.toList();
   }
 
   List<RouteVisitModel> _demoVisits(String date) {

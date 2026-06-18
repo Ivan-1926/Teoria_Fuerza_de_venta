@@ -14,7 +14,8 @@ App Flutter para oficiales de crédito (cartera, ruta, solicitudes, buró, docum
 1. `supabase/schema_and_seed.sql`
 2. `supabase/02_rubrica_integracion.sql` ← roles, bloqueo de intentos y puente E2E
 3. `supabase/03_usuarios_demo_docente.sql`
-4. **`supabase/04_auth_usuarios_demo.sql`** ← login Auth (contraseñas) ← roles docente (opcional si ya corriste 2)
+4. **`supabase/04_auth_usuarios_demo.sql`** ← login Auth (contraseñas)
+5. **`supabase/05_ruta_demo_asesor.sql`** ← visitas en pestaña Ruta ← roles docente (opcional si ya corriste 2)
 
 Luego crea el bucket **documents** (público) en Storage para fotos de expediente.
 ## Funcionalidades
