@@ -1,18 +1,17 @@
 -- =============================================================================
 -- Usuarios demo para docente / evaluación — Fuerza de Ventas
 -- Ejecutar DESPUÉS de schema_and_seed.sql y 02_rubrica_integracion.sql
--- Proyecto: uomaqpphyouzbnestbba.supabase.co
+-- Luego ejecutar: 04_auth_usuarios_demo.sql  ← CREA LOGIN (Auth + contraseña)
 -- =============================================================================
 --
--- PASO A (Supabase Dashboard → Authentication → Users → Add user):
---   supervisor@pichincha.com  |  contraseña: Docente2025!
---   asesor@pichincha.com      |  contraseña: Docente2025!
+-- ORDEN:
+--   1) Este script (03) → perfiles y roles en asesores_negocio
+--   2) 04_auth_usuarios_demo.sql → usuarios Auth con contraseña Docente2025!
 --
--- PASO B: ejecutar este script (asigna roles en asesores_negocio).
---
--- App móvil FV (respaldo sin Auth): demo@pichincha.com / pichincha123  → rol asesor
--- Web supervisor: login en /login → supervisor@pichincha.com / Docente2025!
--- App cliente: registro libre; Caso 1 → DNI 40118120
+-- Credenciales tras ejecutar 03 + 04:
+--   asesor@pichincha.com      / Docente2025!  → app móvil Asesor Ventas
+--   supervisor@pichincha.com  / Docente2025!  → web Fuerza de Ventas (/login)
+--   demo@pichincha.com        / pichincha123  → app móvil (modo demo offline)
 -- =============================================================================
 
 -- Asegurar columnas RBAC (idempotente si ya corrió 02_rubrica_integracion.sql)

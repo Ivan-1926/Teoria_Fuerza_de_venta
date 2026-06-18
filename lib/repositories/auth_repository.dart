@@ -11,12 +11,16 @@ class AuthRepository {
   AuthRepository(this._supabase);
 
   Future<AsesorNegocioModel?> signIn(String email, String password) async {
-    final cleanEmail = email.trim();
+    final cleanEmail = email.trim().toLowerCase();
     final isDemoCredential =
-        cleanEmail.toLowerCase() == 'demo@pichincha.com' && password == 'pichincha123';
+        cleanEmail == 'demo@pichincha.com' && password == 'pichincha123';
+    final isAcademicCredential =
+        (cleanEmail == 'asesor@pichincha.com' ||
+            cleanEmail == 'supervisor@pichincha.com') &&
+        password == 'Docente2025!';
 
     // Bloqueo por 5 intentos fallidos (rúbrica Criterio 4)
-    if (!isDemoCredential) {
+    if (!isDemoCredential && !isAcademicCredential) {
       await _verificarBloqueo(cleanEmail);
     }
 
@@ -63,12 +67,18 @@ class AuthRepository {
       if (isDemoCredential) {
         return await _createDemoSession();
       }
+      if (isAcademicCredential) {
+        return await _createAcademicSession(cleanEmail);
+      }
       // Credenciales inválidas → registra intento fallido
       await _registrarIntento(cleanEmail, false);
       throw Exception(_traducirError(authErr.message));
     } catch (e) {
       if (isDemoCredential) {
         return await _createDemoSession();
+      }
+      if (isAcademicCredential) {
+        return await _createAcademicSession(cleanEmail);
       }
       rethrow;
     }
@@ -114,6 +124,17 @@ class AuthRepository {
       return 'Correo o contraseña incorrectos.';
     }
     return message;
+  }
+
+  Future<AsesorNegocioModel> _createAcademicSession(String email) async {
+    final profile = _knownAcademicProfile(email, 'academic-${email.split('@').first}');
+    if (profile == null) {
+      throw Exception('Credenciales académicas no reconocidas.');
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_demoSessionKey);
+    await prefs.setString(_demoSessionKey, json.encode(profile.toMap()));
+    return profile;
   }
 
   Future<AsesorNegocioModel> _createDemoSession() async {
