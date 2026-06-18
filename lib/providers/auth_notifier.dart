@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/asesor_negocio_model.dart';
 import '../repositories/auth_repository.dart';
 import '../services/auth_service.dart';
@@ -44,7 +45,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           'id': advisor.id,
           'name': advisor.nombreCompleto,
           'email': email,
-          'zone': 'Agencia #${advisor.agenciaId} - Perfil: ${advisor.perfil}',
+          'zone':
+              'Agencia #${advisor.agenciaId} · ${advisor.perfil} · ${advisor.rol}',
           'phone': advisor.codigoEmpleado,
         });
 
@@ -78,8 +80,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         AuthService.syncWithSession({
           'id': advisor.id,
           'name': advisor.nombreCompleto,
-          'email': '',
-          'zone': 'Agencia #${advisor.agenciaId} - Perfil: ${advisor.perfil}',
+          'email':
+              Supabase.instance.client.auth.currentSession?.user.email ?? '',
+          'zone':
+              'Agencia #${advisor.agenciaId} · ${advisor.perfil} · ${advisor.rol}',
           'phone': advisor.codigoEmpleado,
         });
 

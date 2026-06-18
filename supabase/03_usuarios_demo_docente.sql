@@ -49,8 +49,11 @@ where not exists (
 );
 
 update public.asesores_negocio
-set rol = 'asesor', activo = true
+set rol = 'asesor', activo = true, email = lower(email)
 where lower(coalesce(email, '')) = 'asesor@pichincha.com';
+
+-- Normalizar correos en minúsculas (login app móvil)
+update public.asesores_negocio set email = lower(trim(email)) where email is not null;
 
 -- Demo offline app móvil (tabla officers legacy + perfil asesor si existe fila demo)
 insert into public.officers (email, password, name, agency_id)

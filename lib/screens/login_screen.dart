@@ -66,6 +66,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
+  Future<void> _loginWithAsesor() async {
+    _emailCtrl.text = 'asesor@pichincha.com';
+    _passCtrl.text = 'Docente2025!';
+    await Future.delayed(const Duration(milliseconds: 200));
+    await _login();
+  }
+
   Future<void> _loginWithDemo() async {
     _emailCtrl.text = 'demo@pichincha.com';
     _passCtrl.text = 'pichincha123';
@@ -151,7 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                     const SizedBox(height: 48),
                     const Text(
-                      'Iniciar Sesión',
+                      'Asesor de ventas',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 26,
@@ -160,16 +167,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Accede a tu cartera de clientes',
+                      'Inicia sesión con tu correo institucional (Supabase Auth)',
                       style: TextStyle(color: Colors.white60, fontSize: 14),
                     ),
                     const SizedBox(height: 32),
                     // Email field
                     _buildField(
                       controller: _emailCtrl,
-                      label: 'Correo electrónico',
+                      label: 'Correo del asesor',
                       icon: Icons.email_outlined,
                       keyboard: TextInputType.emailAddress,
+                      hint: 'asesor@pichincha.com',
                       validator: (v) => (v == null || !v.contains('@'))
                           ? 'Ingresa un correo válido'
                           : null,
@@ -249,13 +257,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: ElevatedButton(
                         onPressed: loading ? null : _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD400),
+                          backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF003F7D),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 8,
-                          shadowColor: const Color(0xFFFFD400).withOpacity(0.5),
+                          shadowColor: Colors.black26,
                         ),
                         child: loading
                             ? const SizedBox(
@@ -267,7 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ),
                               )
                             : const Text(
-                                'Ingresar',
+                                'Ingresar como asesor',
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
@@ -277,7 +285,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Demo login button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: loading ? null : _loginWithAsesor,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.white, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.badge_outlined, color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Ingresar como asesor (Supabase)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -315,49 +351,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Demo credentials info
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.15),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Credenciales de Demostración',
-                              style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'demo@pichincha.com',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              'pichincha123',
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    _CredentialCard(
+                      title: 'Asesor de ventas (login real)',
+                      lines: const [
+                        'asesor@pichincha.com',
+                        'Docente2025!',
+                      ],
+                      hint:
+                          'Usuario creado en Supabase Auth + script 03_usuarios_demo_docente.sql',
+                    ),
+                    const SizedBox(height: 10),
+                    _CredentialCard(
+                      title: 'Modo demo (sin Supabase Auth)',
+                      lines: const [
+                        'demo@pichincha.com',
+                        'pichincha123',
+                      ],
+                      hint: 'Datos locales de demostración',
                     ),
                   ],
                 ),
@@ -374,6 +384,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     required String label,
     required IconData icon,
     TextInputType keyboard = TextInputType.text,
+    String? hint,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
@@ -382,6 +393,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38),
         labelStyle: const TextStyle(color: Colors.white60),
         prefixIcon: Icon(icon, color: Colors.white54),
         enabledBorder: OutlineInputBorder(
@@ -404,6 +417,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         fillColor: Colors.white.withOpacity(0.07),
       ),
       validator: validator,
+    );
+  }
+}
+
+class _CredentialCard extends StatelessWidget {
+  final String title;
+  final List<String> lines;
+  final String hint;
+
+  const _CredentialCard({
+    required this.title,
+    required this.lines,
+    required this.hint,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...lines.map(
+            (line) => Text(
+              line,
+              style: TextStyle(
+                color: line.contains('@') ? Colors.white : Colors.white54,
+                fontSize: line.contains('@') ? 12 : 11,
+                fontWeight: line.contains('@') ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hint,
+            style: const TextStyle(color: Colors.white38, fontSize: 10),
+          ),
+        ],
+      ),
     );
   }
 }

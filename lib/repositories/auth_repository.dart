@@ -28,10 +28,13 @@ class AuthRepository {
       );
 
       if (response.user != null) {
-        final profile = await getAdvisorProfile(response.user!.id);
+        final profile = await _resolveAdvisorProfile(response.user!);
         if (profile == null) {
           await signOut();
-          throw Exception('Perfil de asesor no encontrado en la base de datos.');
+          throw Exception(
+            'Perfil de asesor no encontrado. Ejecuta 03_usuarios_demo_docente.sql '
+            'y crea el usuario en Supabase Auth con el mismo correo.',
+          );
         }
 
         if (!profile.activo) {
@@ -143,6 +146,77 @@ class AuthRepository {
     }
   }
 
+  /// Resuelve el perfil por correo (esquema real: id entero + email en asesores_negocio).
+  Future<AsesorNegocioModel?> getAdvisorProfileByEmail(String email) async {
+    final clean = email.trim().toLowerCase();
+    if (clean.isEmpty) return null;
+    try {
+      final data = await _supabase
+          .from('asesores_negocio')
+          .select()
+          .eq('email', clean)
+          .maybeSingle();
+      if (data != null) {
+        return AsesorNegocioModel.fromMap(data);
+      }
+      // Fallback: comparación case-insensitive si el correo en BD tiene mayúsculas
+      final list = await _supabase
+          .from('asesores_negocio')
+          .select()
+          .ilike('email', clean);
+      if (list is List && list.isNotEmpty) {
+        return AsesorNegocioModel.fromMap(
+          Map<String, dynamic>.from(list.first as Map),
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error al consultar asesor por correo: ${e.toString()}');
+    }
+  }
+
+  Future<AsesorNegocioModel?> _resolveAdvisorProfile(User user) async {
+    final email = user.email?.trim().toLowerCase();
+    if (email != null && email.isNotEmpty) {
+      final byEmail = await getAdvisorProfileByEmail(email);
+      if (byEmail != null) return byEmail;
+    }
+    final byId = await getAdvisorProfile(user.id);
+    if (byId != null) return byId;
+
+    // Auth válido pero sin fila en asesores_negocio (demo académica).
+    return _knownAcademicProfile(email, user.id);
+  }
+
+  AsesorNegocioModel? _knownAcademicProfile(String? email, String userId) {
+    switch (email) {
+      case 'asesor@pichincha.com':
+        return AsesorNegocioModel(
+          id: userId,
+          codigoEmpleado: 'ASE-001',
+          nombres: 'Carlos',
+          apellidos: 'Mendoza',
+          agenciaId: '101',
+          perfil: 'Oficial de Crédito Principal',
+          activo: true,
+          rol: 'asesor',
+        );
+      case 'supervisor@pichincha.com':
+        return AsesorNegocioModel(
+          id: userId,
+          codigoEmpleado: 'SUP-001',
+          nombres: 'María',
+          apellidos: 'Supervisor',
+          agenciaId: '101',
+          perfil: 'Supervisor de Crédito',
+          activo: true,
+          rol: 'supervisor',
+        );
+      default:
+        return null;
+    }
+  }
+
   Future<AsesorNegocioModel?> checkCurrentSession() async {
     // 1. Check for demo session first
     final prefs = await SharedPreferences.getInstance();
@@ -161,23 +235,30 @@ class AuthRepository {
     
     // Check if the advisor profile is still active
     try {
-      final profile = await getAdvisorProfile(session.user.id);
+      final profile = await _resolveAdvisorProfile(session.user!);
       if (profile == null || !profile.activo) {
         await signOut();
         return null;
       }
       return profile;
     } catch (_) {
-      // In case of network errors during boot, assume active temporarily to avoid forcing offline logout,
-      // or return cached/derived advisor info from user metadata.
+      final email = session.user!.email?.trim();
+      if (email != null && email.isNotEmpty) {
+        try {
+          final profile = await getAdvisorProfileByEmail(email);
+          if (profile != null && profile.activo) return profile;
+        } catch (_) {}
+      }
+      // Sin red: perfil mínimo desde JWT (rol asesor por defecto)
       return AsesorNegocioModel(
-        id: session.user.id,
+        id: session.user!.id,
         codigoEmpleado: 'EMP-REC',
-        nombres: session.user.email?.split('@').first ?? 'Asesor',
+        nombres: session.user!.email?.split('@').first ?? 'Asesor',
         apellidos: 'Recuperado',
         agenciaId: '1',
         perfil: 'Oficial',
         activo: true,
+        rol: 'asesor',
       );
     }
   }
