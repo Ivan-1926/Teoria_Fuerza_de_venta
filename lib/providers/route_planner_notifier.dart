@@ -107,7 +107,9 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
 
   Future<void> markAsVisited(String visitId) async {
     try {
-      await _repository.updateVisitStatus(visitId, 'visited');
+      if (!visitId.startsWith('rv-demo-')) {
+        await _repository.updateVisitStatus(visitId, 'visited');
+      }
       
       // Update local status
       final updatedVisits = state.visits.map((v) {
@@ -171,8 +173,11 @@ class RoutePlannerNotifier extends StateNotifier<RoutePlannerState> {
       // Add unmapped back to the end
       optimized.addAll(unmappedVisits);
 
-      // Save orders in Supabase
-      await _repository.saveOptimizedRouteOrder(optimized);
+      // Save orders in Supabase (omit demo visits)
+      final persistable = optimized.where((v) => !v.id.startsWith('rv-demo-')).toList();
+      if (persistable.isNotEmpty) {
+        await _repository.saveOptimizedRouteOrder(persistable);
+      }
 
       // Update local state visits with ordered tags
       final reordered = optimized.asMap().entries.map((entry) {

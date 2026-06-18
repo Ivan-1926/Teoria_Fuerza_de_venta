@@ -104,8 +104,8 @@ Future<List<Map<String, dynamic>>> fetchApplications({
     query += '&status=eq.$status';
   }
   if (clientId != null) query += '&client_id=eq.$clientId';
-  if (officerId != null && officerId.isNotEmpty) {
-    query += '&officer_id=eq.$officerId';
+  if (officerId != null && officerId.isNotEmpty && officerId != 'demo-officer-001') {
+    query += '&or=(officer_id.eq.$officerId,officer_id.is.null)';
   }
   final res = await http.get(Uri.parse(query), headers: _headers());
   if (res.statusCode == 200) {

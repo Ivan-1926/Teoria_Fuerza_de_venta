@@ -140,4 +140,49 @@ class DemoDataService {
       'updated_at': now.toIso8601String(),
     };
   }
+
+  static List<Map<String, dynamic>> demoRouteVisits(String date) => [
+        {
+          'id': 'rv-demo-001',
+          'officer_id': 'demo-officer-001',
+          'client_id': 'cli-demo-001',
+          'client_name': 'María Elena Vásquez',
+          'visit_date': date,
+          'visit_order': 1,
+          'address': 'Av. 6 de Diciembre N45-12, Quito',
+          'lat': -0.180653,
+          'lng': -78.467838,
+          'estimated_time': '09:00',
+          'visit_status': 'pending',
+          'notes': 'Renovación crédito',
+        },
+        {
+          'id': 'rv-demo-002',
+          'officer_id': 'demo-officer-001',
+          'client_id': 'cli-demo-002',
+          'client_name': 'Roberto Andrés Morales',
+          'visit_date': date,
+          'visit_order': 2,
+          'address': 'Cdla. Kennedy, Guayaquil',
+          'lat': -0.205000,
+          'lng': -78.520000,
+          'estimated_time': '10:30',
+          'visit_status': 'pending',
+          'notes': 'Seguimiento cartera',
+        },
+        {
+          'id': 'rv-demo-003',
+          'officer_id': 'demo-officer-001',
+          'client_id': 'cli-demo-003',
+          'client_name': 'Ana Lucía Herrera',
+          'visit_date': date,
+          'visit_order': 3,
+          'address': 'Calle Sucre 102, Cuenca',
+          'lat': -0.225000,
+          'lng': -78.490000,
+          'estimated_time': '12:00',
+          'visit_status': 'visited',
+          'notes': 'Visita completada',
+        },
+      ];
 }

@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../utils/format_utils.dart';
 import '../models/route_visit_model.dart';
 import '../providers/providers.dart';
+import '../providers/route_planner_notifier.dart';
 
 class RoutePlannerScreen extends ConsumerStatefulWidget {
   const RoutePlannerScreen({super.key});
@@ -16,16 +17,11 @@ class RoutePlannerScreen extends ConsumerStatefulWidget {
 
 class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   final _todayLabel = FormatUtils.dateRouteHeader(DateTime.now());
-  GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(routePlannerNotifierProvider.notifier).loadRoutePlanner());
-  }
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
   }
 
   Future<void> _openExternalNavigation(RouteVisitModel visit, String appName) async {
@@ -146,16 +142,6 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         ? LatLng(routeState.currentPosition!.latitude, routeState.currentPosition!.longitude)
         : const LatLng(-0.180653, -78.467838);
 
-    // Sync camera if controller is initialized and position changes
-    if (_mapController != null && routeState.currentPosition != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(routeState.currentPosition!.latitude, routeState.currentPosition!.longitude),
-          14.0,
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: kBackground,
       body: RefreshIndicator(
@@ -213,57 +199,33 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: routeState.isLoading && routeState.visits.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : GoogleMap(
-                        onMapCreated: _onMapCreated,
-                        initialCameraPosition: CameraPosition(
-                          target: initialCenter,
-                          zoom: 13.0,
-                        ),
-                        markers: routeState.markers,
-                        polylines: routeState.polylines,
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                      ),
+                child: _RouteMapView(
+                  routeState: routeState,
+                  initialCenter: initialCenter,
+                ),
               ),
             ),
 
-            // ── Optimizar Ruta Banner ──────────────────────────────────
+            // ── Abrir ruta en Google Maps ───────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: routeState.isLoading
-                          ? null
-                          : () => ref.read(routePlannerNotifierProvider.notifier).optimizeRoute(),
-                      icon: const Icon(Icons.electric_bolt, size: 16),
-                      label: const Text('Optimizar Ruta (Distancia TSP)'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00796B),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        elevation: 2,
-                      ),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: routeState.visits.isEmpty
+                      ? null
+                      : () => _openFullRoute(routeState.visits),
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('Ver ruta completa en Google Maps'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kPrimaryBlue,
+                    side: const BorderSide(color: kPrimaryBlue),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => _openFullRoute(routeState.visits),
-                    tooltip: 'Ruta Completa en Maps',
-                    icon: const Icon(Icons.directions),
-                    color: kPrimaryBlue,
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shadowColor: Colors.black12,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
@@ -322,6 +284,83 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Mapa aislado para evitar usar [GoogleMapController] durante el build().
+class _RouteMapView extends StatefulWidget {
+  final RoutePlannerState routeState;
+  final LatLng initialCenter;
+
+  const _RouteMapView({
+    required this.routeState,
+    required this.initialCenter,
+  });
+
+  @override
+  State<_RouteMapView> createState() => _RouteMapViewState();
+}
+
+class _RouteMapViewState extends State<_RouteMapView> {
+  GoogleMapController? _controller;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RouteMapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.routeState.currentPosition;
+    final prev = oldWidget.routeState.currentPosition;
+    if (next == null) return;
+    if (prev == null ||
+        prev.latitude != next.latitude ||
+        prev.longitude != next.longitude) {
+      _moveCamera(LatLng(next.latitude, next.longitude));
+    }
+  }
+
+  void _moveCamera(LatLng target) {
+    final controller = _controller;
+    if (controller == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _controller == null) return;
+      try {
+        await _controller!.animateCamera(
+          CameraUpdate.newLatLngZoom(target, 14.0),
+        );
+      } catch (_) {
+        // El controlador puede no estar listo o el mapa fue desmontado.
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.routeState.isLoading && widget.routeState.visits.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return GoogleMap(
+      key: const ValueKey('route_map'),
+      onMapCreated: (controller) {
+        _controller = controller;
+        _moveCamera(widget.initialCenter);
+      },
+      initialCameraPosition: CameraPosition(
+        target: widget.initialCenter,
+        zoom: 13.0,
+      ),
+      markers: widget.routeState.markers,
+      polylines: widget.routeState.polylines,
+      myLocationEnabled: true,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
     );
   }
 }
