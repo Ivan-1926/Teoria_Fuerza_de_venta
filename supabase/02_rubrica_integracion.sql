@@ -187,6 +187,58 @@ $$;
 
 grant execute on function public.rpc_fv_registrar_intento(text, boolean) to anon, authenticated;
 
+-- ─── 5b. RPC: perfil asesor por email (login app; id entero ≠ auth.uid UUID) ─
+create or replace function public.rpc_fv_perfil_asesor(p_email text)
+returns table(
+  id integer,
+  codigo text,
+  codigo_empleado text,
+  id_agencia integer,
+  agencia_id integer,
+  nombres text,
+  apellidos text,
+  email text,
+  nivel text,
+  perfil text,
+  activo boolean,
+  rol text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    a.id,
+    a.codigo,
+    a.codigo as codigo_empleado,
+    a.id_agencia,
+    a.id_agencia as agencia_id,
+    a.nombres,
+    a.apellidos,
+    a.email,
+    a.nivel,
+    a.nivel as perfil,
+    a.activo,
+    a.rol
+  from public.asesores_negocio a
+  where lower(coalesce(a.email, '')) = lower(trim(p_email))
+  limit 1;
+end;
+$$;
+
+grant execute on function public.rpc_fv_perfil_asesor(text) to anon, authenticated;
+
+-- Lectura de perfil propio para rol authenticated (por email del JWT, no por id uuid).
+do $$
+begin
+  drop policy if exists "auth_select_asesor_email" on public.asesores_negocio;
+  create policy "auth_select_asesor_email" on public.asesores_negocio
+    for select to authenticated
+    using (lower(coalesce(email, '')) = lower(coalesce(auth.email(), '')));
+end $$;
+
 -- ─── 6. RLS POR ROL (capa "producción" con JWT; anon sigue activa para demo) ──
 -- Matriz: asesor ve sólo lo suyo (officer_id = auth.uid); supervisor/admin ven todo.
 create or replace function public.fn_rol_actual()

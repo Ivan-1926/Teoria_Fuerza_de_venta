@@ -106,8 +106,19 @@ class ApplicationStatusNotifier extends StateNotifier<ApplicationStatusState> {
         return null;
       }
 
-      if (!state.isDemo) {
+      if (_isDemoApplicationId(id)) {
+        state = state.copyWith(clearUpdatingId: true);
+        return 'Solicitud de ejemplo: inicie sesión con datos reales de Supabase '
+            'para enviar al comité.';
+      }
+
+      if (state.supabaseReachable) {
         await _repo.patchApplication(id, patch);
+      } else if (state.isDemo) {
+        // Sin red: solo reflejo local en modo demo offline.
+      } else {
+        state = state.copyWith(clearUpdatingId: true);
+        return 'Sin conexión con el servidor.';
       }
 
       final updated = state.applications
@@ -130,6 +141,9 @@ class ApplicationStatusNotifier extends StateNotifier<ApplicationStatusState> {
       return e.toString();
     }
   }
+
+  bool _isDemoApplicationId(String id) =>
+      id.startsWith('app-demo-') || id.startsWith('sol-');
 
   Future<String?> acceptApplication(String id, String officerId) {
     return updateApplication(

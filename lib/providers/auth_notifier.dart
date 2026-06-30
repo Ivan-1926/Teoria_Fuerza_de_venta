@@ -111,15 +111,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // Force session checks in repositories
   Future<bool> verifyActiveStatus() async {
     if (state.advisor == null) return false;
+    if (!state.advisor!.activo) {
+      await logout(inactiveReason: true);
+      return false;
+    }
     try {
-      final profile = await _repository.getAdvisorProfile(state.advisor!.id);
-      if (profile == null || !profile.activo) {
+      final email =
+          Supabase.instance.client.auth.currentSession?.user.email?.trim();
+      if (email != null && email.isNotEmpty) {
+        final profile = await _repository.getAdvisorProfileByEmail(email);
+        if (profile != null && !profile.activo) {
+          await logout(inactiveReason: true);
+          return false;
+        }
+        return true;
+      }
+      final advisorId = state.advisor!.id;
+      if (int.tryParse(advisorId) == null) {
+        return true;
+      }
+      final profile = await _repository.getAdvisorProfile(advisorId);
+      if (profile != null && !profile.activo) {
         await logout(inactiveReason: true);
         return false;
       }
       return true;
     } catch (_) {
-      // In case of offline/network issues, do not boot user out immediately
       return true;
     }
   }

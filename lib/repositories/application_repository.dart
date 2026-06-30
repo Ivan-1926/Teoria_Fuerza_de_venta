@@ -17,27 +17,30 @@ class ApplicationsLoadResult {
 class ApplicationRepository {
   Future<ApplicationsLoadResult> loadApplications({String? officerId}) async {
     final reachable = await pingSupabase();
-    if (reachable) {
-      try {
-        final raw = await fetchApplications(officerId: officerId);
-        if (raw.isNotEmpty) {
-          return ApplicationsLoadResult(
-            applications:
-                raw.map((m) => ApplicationModel.fromMap(m)).toList(),
-            isDemo: false,
-            supabaseReachable: true,
-          );
-        }
-      } catch (_) {}
+    if (!reachable) {
+      return ApplicationsLoadResult(
+        applications: DemoDataService.demoApplications()
+            .map((m) => ApplicationModel.fromMap(m))
+            .toList(),
+        isDemo: true,
+        supabaseReachable: false,
+      );
     }
 
-    return ApplicationsLoadResult(
-      applications: DemoDataService.demoApplications()
-          .map((m) => ApplicationModel.fromMap(m))
-          .toList(),
-      isDemo: true,
-      supabaseReachable: reachable,
-    );
+    try {
+      final raw = await fetchApplications(officerId: officerId);
+      return ApplicationsLoadResult(
+        applications: raw.map((m) => ApplicationModel.fromMap(m)).toList(),
+        isDemo: false,
+        supabaseReachable: true,
+      );
+    } catch (_) {
+      return ApplicationsLoadResult(
+        applications: const [],
+        isDemo: false,
+        supabaseReachable: true,
+      );
+    }
   }
 
   Future<void> changeStatus(String id, String status) async {

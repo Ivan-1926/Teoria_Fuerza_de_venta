@@ -32,7 +32,16 @@ class AuthRepository {
       );
 
       if (response.user != null) {
-        final profile = await _resolveAdvisorProfile(response.user!);
+        AsesorNegocioModel? profile;
+        try {
+          profile = await _resolveAdvisorProfile(response.user!);
+        } catch (_) {
+          if (isAcademicCredential) {
+            profile = await _createAcademicSession(cleanEmail);
+          } else {
+            rethrow;
+          }
+        }
         if (profile == null) {
           await signOut();
           throw Exception(
@@ -164,11 +173,13 @@ class AuthRepository {
   }
 
   Future<AsesorNegocioModel?> getAdvisorProfile(String id) async {
+    // asesores_negocio.id es entero en el esquema real; nunca consultar con UUID Auth.
+    if (!_isNumericAsesorId(id)) return null;
     try {
       final data = await _supabase
           .from('asesores_negocio')
           .select()
-          .eq('id', id)
+          .eq('id', int.parse(id))
           .maybeSingle();
       if (data == null) return null;
       return AsesorNegocioModel.fromMap(data);
@@ -177,10 +188,45 @@ class AuthRepository {
     }
   }
 
+  bool _isNumericAsesorId(String id) {
+    if (id.isEmpty) return false;
+    return int.tryParse(id) != null;
+  }
+
+  bool _isAuthUuid(String id) {
+    final re = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    );
+    return re.hasMatch(id);
+  }
+
+  String _academicFallbackId(String? email) {
+    if (email == null || email.isEmpty) return 'academic-officer';
+    return 'academic-${email.split('@').first}';
+  }
+
   /// Resuelve el perfil por correo (esquema real: id entero + email en asesores_negocio).
   Future<AsesorNegocioModel?> getAdvisorProfileByEmail(String email) async {
     final clean = email.trim().toLowerCase();
     if (clean.isEmpty) return null;
+
+    // RPC security definer: evita RLS y no usa auth.uid() como id entero.
+    try {
+      final rpc = await _supabase.rpc(
+        'rpc_fv_perfil_asesor',
+        params: {'p_email': clean},
+      );
+      final row = rpc is List && rpc.isNotEmpty
+          ? Map<String, dynamic>.from(rpc.first as Map)
+          : (rpc is Map ? Map<String, dynamic>.from(rpc) : null);
+      if (row != null && row.isNotEmpty) {
+        return AsesorNegocioModel.fromMap(row);
+      }
+    } catch (_) {
+      // Si la RPC no existe, continuar con consulta directa.
+    }
+
     try {
       final data = await _supabase
           .from('asesores_negocio')
@@ -195,9 +241,9 @@ class AuthRepository {
           .from('asesores_negocio')
           .select()
           .ilike('email', clean);
-      if (list is List && list.isNotEmpty) {
+      if (list.isNotEmpty) {
         return AsesorNegocioModel.fromMap(
-          Map<String, dynamic>.from(list.first as Map),
+          Map<String, dynamic>.from(list.first),
         );
       }
       return null;
@@ -209,21 +255,24 @@ class AuthRepository {
   Future<AsesorNegocioModel?> _resolveAdvisorProfile(User user) async {
     final email = user.email?.trim().toLowerCase();
     if (email != null && email.isNotEmpty) {
-      final byEmail = await getAdvisorProfileByEmail(email);
-      if (byEmail != null) return byEmail;
+      try {
+        final byEmail = await getAdvisorProfileByEmail(email);
+        if (byEmail != null) return byEmail;
+      } catch (_) {
+        // Continúa con perfil académico conocido (sin UUID en id de BD).
+      }
     }
-    final byId = await getAdvisorProfile(user.id);
-    if (byId != null) return byId;
 
-    // Auth válido pero sin fila en asesores_negocio (demo académica).
-    return _knownAcademicProfile(email, user.id);
+    // No buscar auth.uid() en asesores_negocio (id entero ≠ UUID).
+    final fallbackId = _isAuthUuid(user.id) ? _academicFallbackId(email) : user.id;
+    return _knownAcademicProfile(email, fallbackId);
   }
 
-  AsesorNegocioModel? _knownAcademicProfile(String? email, String userId) {
+  AsesorNegocioModel? _knownAcademicProfile(String? email, String fallbackId) {
     switch (email) {
       case 'asesor@pichincha.com':
         return AsesorNegocioModel(
-          id: userId,
+          id: fallbackId,
           codigoEmpleado: 'ASE-001',
           nombres: 'Carlos',
           apellidos: 'Mendoza',
@@ -234,7 +283,7 @@ class AuthRepository {
         );
       case 'supervisor@pichincha.com':
         return AsesorNegocioModel(
-          id: userId,
+          id: fallbackId,
           codigoEmpleado: 'SUP-001',
           nombres: 'María',
           apellidos: 'Supervisor',
@@ -265,15 +314,16 @@ class AuthRepository {
     }
     
     // Check if the advisor profile is still active
+    final user = session.user;
     try {
-      final profile = await _resolveAdvisorProfile(session.user!);
+      final profile = await _resolveAdvisorProfile(user);
       if (profile == null || !profile.activo) {
         await signOut();
         return null;
       }
       return profile;
     } catch (_) {
-      final email = session.user!.email?.trim();
+      final email = user.email?.trim().toLowerCase();
       if (email != null && email.isNotEmpty) {
         try {
           final profile = await getAdvisorProfileByEmail(email);
@@ -281,10 +331,13 @@ class AuthRepository {
         } catch (_) {}
       }
       // Sin red: perfil mínimo desde JWT (rol asesor por defecto)
+      final fallbackId = _isAuthUuid(user.id)
+          ? _academicFallbackId(email)
+          : user.id;
       return AsesorNegocioModel(
-        id: session.user!.id,
+        id: fallbackId,
         codigoEmpleado: 'EMP-REC',
-        nombres: session.user!.email?.split('@').first ?? 'Asesor',
+        nombres: user.email?.split('@').first ?? 'Asesor',
         apellidos: 'Recuperado',
         agenciaId: '1',
         perfil: 'Oficial',

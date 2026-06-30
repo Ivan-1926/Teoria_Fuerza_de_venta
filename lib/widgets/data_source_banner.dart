@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../services/demo_data_service.dart';
-import '../theme.dart';
 
 /// Indica si los datos vienen de Supabase en vivo o del modo demo.
 class DataSourceBanner extends StatelessWidget {
@@ -26,20 +24,14 @@ class DataSourceBanner extends StatelessWidget {
       bg = Colors.orange.shade50;
       fg = Colors.orange.shade900;
       title = 'Sin conexión a Supabase';
-      subtitle = 'Mostrando datos demo locales · ${DemoDataService.supabaseUrl}';
-    } else if (isDemo) {
-      icon = Icons.science_outlined;
-      bg = kPrimaryYellow.withValues(alpha: 0.25);
-      fg = kPrimaryBlue;
-      title = 'Modo demo';
       subtitle =
-          'Supabase conectado pero sin registros — usando solicitudes de ejemplo';
+          'Modo demo offline — enviar a comité no llegará a la web del supervisor';
     } else {
       icon = Icons.cloud_done;
       bg = Colors.green.shade50;
       fg = Colors.green.shade800;
       title = 'Datos en vivo';
-      subtitle = 'Sincronizado con Supabase · credit_applications';
+      subtitle = 'Sincronizado con Supabase · fv_credit_applications';
     }
 
     return Container(

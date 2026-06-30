@@ -113,6 +113,8 @@ class ApplicationModel {
         return const Color(0xFF6A1B9A);
       case 'rechazado':
         return const Color(0xFFC62828);
+      case 'condicionado':
+        return const Color(0xFFEF6C00);
       default:
         return Colors.grey;
     }
@@ -206,6 +208,8 @@ class ApplicationModel {
         return 'Desembolsado';
       case 'rechazado':
         return 'Rechazado';
+      case 'condicionado':
+        return 'Condicionado';
       default:
         return status;
     }

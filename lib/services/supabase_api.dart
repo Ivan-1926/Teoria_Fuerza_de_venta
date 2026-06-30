@@ -1,17 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'secure_session_service.dart';
 import 'supabase_config.dart';
 
 const _supabaseUrl = supabaseUrl;
 const _supabaseKey = supabaseAnonKey;
 
-Map<String, String> _headers({bool returnRepresentation = false}) => {
-  'apikey': _supabaseKey,
-  'Authorization': 'Bearer $_supabaseKey',
-  'Content-Type': 'application/json',
-  if (returnRepresentation) 'Prefer': 'return=representation',
-};
+Future<Map<String, String>> _headers({bool returnRepresentation = false}) async {
+  final token = await SecureSessionService.accessToken;
+  final bearer =
+      (token != null && token.isNotEmpty) ? token : _supabaseKey;
+  return {
+    'apikey': _supabaseKey,
+    'Authorization': 'Bearer $bearer',
+    'Content-Type': 'application/json',
+    if (returnRepresentation) 'Prefer': 'return=representation',
+  };
+}
 
 // ─── HEALTH CHECK ────────────────────────────────────────────────────────────
 
@@ -21,7 +27,7 @@ Future<bool> pingSupabase() async {
     final url = Uri.parse(
       '$_supabaseUrl/rest/v1/fv_credit_applications?select=id&limit=1',
     );
-    final res = await http.get(url, headers: _headers());
+    final res = await http.get(url, headers: await _headers());
     return res.statusCode == 200;
   } catch (_) {
     return false;
@@ -37,7 +43,7 @@ Future<Map<String, dynamic>?> loginOfficer(
   final url = Uri.parse(
     '$_supabaseUrl/rest/v1/officers?email=eq.$email&password=eq.$password&select=*&limit=1',
   );
-  final res = await http.get(url, headers: _headers());
+  final res = await http.get(url, headers: await _headers());
   if (res.statusCode == 200) {
     final list = json.decode(res.body) as List<dynamic>;
     if (list.isNotEmpty) return list.first as Map<String, dynamic>;
@@ -56,7 +62,7 @@ Future<List<Map<String, dynamic>>> fetchDailyPortfolio({
   if (officerId != null && officerId.isNotEmpty) {
     query += '&officer_id=eq.$officerId';
   }
-  final res = await http.get(Uri.parse(query), headers: _headers());
+  final res = await http.get(Uri.parse(query), headers: await _headers());
   if (res.statusCode == 200) {
     return (json.decode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>();
@@ -71,7 +77,7 @@ Future<List<Map<String, dynamic>>> fetchClients({String? search}) async {
   if (search != null && search.isNotEmpty) {
     query += '&name=ilike.*$search*';
   }
-  final res = await http.get(Uri.parse(query), headers: _headers());
+  final res = await http.get(Uri.parse(query), headers: await _headers());
   if (res.statusCode == 200) {
     return (json.decode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>();
@@ -83,7 +89,7 @@ Future<Map<String, dynamic>?> fetchClientById(String id) async {
   final url = Uri.parse(
     '$_supabaseUrl/rest/v1/fv_clients?id=eq.$id&select=*&limit=1',
   );
-  final res = await http.get(url, headers: _headers());
+  final res = await http.get(url, headers: await _headers());
   if (res.statusCode == 200) {
     final list = json.decode(res.body) as List<dynamic>;
     if (list.isNotEmpty) return list.first as Map<String, dynamic>;
@@ -107,7 +113,7 @@ Future<List<Map<String, dynamic>>> fetchApplications({
   if (officerId != null && officerId.isNotEmpty && officerId != 'demo-officer-001') {
     query += '&or=(officer_id.eq.$officerId,officer_id.is.null)';
   }
-  final res = await http.get(Uri.parse(query), headers: _headers());
+  final res = await http.get(Uri.parse(query), headers: await _headers());
   if (res.statusCode == 200) {
     return (json.decode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>();
@@ -121,7 +127,7 @@ Future<Map<String, dynamic>> createCreditApplication(
   final url = Uri.parse('$_supabaseUrl/rest/v1/fv_credit_applications');
   final res = await http.post(
     url,
-    headers: _headers(returnRepresentation: true),
+    headers: await _headers(returnRepresentation: true),
     body: json.encode(payload),
   );
   if (res.statusCode == 201) {
@@ -143,11 +149,15 @@ Future<void> patchCreditApplication(
   Map<String, dynamic> fields,
 ) async {
   if (fields.isEmpty) return;
+  final payload = Map<String, dynamic>.from(fields);
+  if (payload.containsKey('status') && !payload.containsKey('updated_at')) {
+    payload['updated_at'] = DateTime.now().toUtc().toIso8601String();
+  }
   final url = Uri.parse('$_supabaseUrl/rest/v1/fv_credit_applications?id=eq.$id');
   final res = await http.patch(
     url,
-    headers: _headers(),
-    body: json.encode(fields),
+    headers: await _headers(),
+    body: json.encode(payload),
   );
   if (res.statusCode < 200 || res.statusCode >= 300) {
     throw Exception('Error updating application: ${res.statusCode} ${res.body}');
@@ -165,7 +175,7 @@ Future<List<Map<String, dynamic>>> fetchRouteVisits(
   if (officerId != null && officerId.isNotEmpty) {
     query += '&officer_id=eq.$officerId';
   }
-  final res = await http.get(Uri.parse(query), headers: _headers());
+  final res = await http.get(Uri.parse(query), headers: await _headers());
   if (res.statusCode == 200) {
     return (json.decode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>();
@@ -177,7 +187,7 @@ Future<void> updateVisitStatus(String visitId, String status) async {
   final url = Uri.parse('$_supabaseUrl/rest/v1/fv_route_visits?id=eq.$visitId');
   await http.patch(
     url,
-    headers: _headers(),
+    headers: await _headers(),
     body: json.encode({'visit_status': status}),
   );
 }
@@ -188,7 +198,7 @@ Future<Map<String, dynamic>?> fetchClientByDni(String dni) async {
   final url = Uri.parse(
     '$_supabaseUrl/rest/v1/fv_clients?dni=eq.$dni&select=*&limit=1',
   );
-  final res = await http.get(url, headers: _headers());
+  final res = await http.get(url, headers: await _headers());
   if (res.statusCode == 200) {
     final list = json.decode(res.body) as List<dynamic>;
     if (list.isNotEmpty) return list.first as Map<String, dynamic>;
@@ -204,7 +214,7 @@ Future<Map<String, dynamic>?> fetchBlacklistEntry(String dni) async {
       final url = Uri.parse(
         '$_supabaseUrl/rest/v1/$table?dni=eq.$dni&select=*&limit=1',
       );
-      final res = await http.get(url, headers: _headers());
+      final res = await http.get(url, headers: await _headers());
       if (res.statusCode == 200) {
         final list = json.decode(res.body) as List<dynamic>;
         if (list.isNotEmpty) return list.first as Map<String, dynamic>;
@@ -240,7 +250,7 @@ Future<Map<String, dynamic>> saveBuroQuery(Map<String, dynamic> payload) async {
       final url = Uri.parse('$_supabaseUrl/rest/v1/$table');
       final res = await http.post(
         url,
-        headers: _headers(returnRepresentation: true),
+        headers: await _headers(returnRepresentation: true),
         body: json.encode(payload),
       );
       if (res.statusCode == 201) {
@@ -266,7 +276,7 @@ Future<List<Map<String, dynamic>>> fetchBuroQueries(String dni) async {
       final url = Uri.parse(
         '$_supabaseUrl/rest/v1/$table?dni=eq.$dni&select=*&order=consulted_at.desc&limit=5',
       );
-      final res = await http.get(url, headers: _headers());
+      final res = await http.get(url, headers: await _headers());
       if (res.statusCode == 200) {
         return (json.decode(res.body) as List<dynamic>)
             .cast<Map<String, dynamic>>();
@@ -327,7 +337,7 @@ Future<List<Map<String, dynamic>>> fetchClientDocuments({
   } else {
     return [];
   }
-  final res = await http.get(Uri.parse(query), headers: _headers());
+  final res = await http.get(Uri.parse(query), headers: await _headers());
   if (res.statusCode == 200) {
     return (json.decode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>();
@@ -341,7 +351,7 @@ Future<Map<String, dynamic>> saveClientDocument(
   final url = Uri.parse('$_supabaseUrl/rest/v1/fv_client_documents');
   final res = await http.post(
     url,
-    headers: _headers(returnRepresentation: true),
+    headers: await _headers(returnRepresentation: true),
     body: json.encode(payload),
   );
   if (res.statusCode == 201) {
@@ -356,7 +366,7 @@ Future<Map<String, dynamic>> saveClientDocument(
 
 Future<void> deleteClientDocumentRemote(String id) async {
   final url = Uri.parse('$_supabaseUrl/rest/v1/fv_client_documents?id=eq.$id');
-  await http.delete(url, headers: _headers());
+  await http.delete(url, headers: await _headers());
 }
 
 // ─── STORAGE ─────────────────────────────────────────────────────────────────
@@ -373,7 +383,7 @@ Future<String> uploadDocumentFile(
   final res = await http.put(
     url,
     headers: {
-      ..._headers(),
+      ...(await _headers()),
       'x-upsert': 'true',
       'Content-Type': _mimeForPath(filePath),
     },

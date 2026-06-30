@@ -1,4 +1,5 @@
 import '../models/buro_report_model.dart';
+import 'buro_por_dni.dart';
 import 'supabase_api.dart';
 
 /// Servicio de consulta al Buró de Crédito con listas negras (M6).
@@ -11,12 +12,13 @@ class ConsultaBuroService {
     String? officerId,
   }) async {
     final normalized = dni.trim();
-    if (normalized.length < 10) {
+    if (normalized.length < 8) {
       throw Exception('DNI inválido para consulta de buró');
     }
 
     final blacklist = await fetchBlacklistEntry(normalized);
     final client = await fetchClientByDni(normalized);
+    final perfilDni = PerfilBuroPorDni.fromDni(normalized);
 
     final name = clientName ??
         client?['name']?.toString() ??
@@ -25,29 +27,37 @@ class ConsultaBuroService {
 
     final score = (client?['credit_score'] as num?)?.toInt() ??
         (client?['sbs_score'] as num?)?.toInt() ??
-        _demoScoreFromDni(normalized);
+        perfilDni.scoreNumerico;
 
     final deudaTotal = (client?['total_debt'] as num?)?.toDouble() ??
         (client?['loan_balance'] as num?)?.toDouble() ??
-        _demoDebt(score);
+        perfilDni.deudaTotal;
 
     final mayorDeuda = (client?['max_debt'] as num?)?.toDouble() ??
         (client?['mayor_deuda'] as num?)?.toDouble() ??
-        deudaTotal * 0.6;
+        (deudaTotal * 0.6);
 
     final diasMora = (client?['days_overdue'] as num?)?.toInt() ??
         (client?['dias_mora'] as num?)?.toInt() ??
-        (score < 550 ? 45 : score < 650 ? 12 : 0);
+        perfilDni.diasMora;
 
-    final inBlacklist = blacklist != null;
+    final inBlacklist = blacklist != null ||
+        client?['status']?.toString().toLowerCase() == 'blacklisted' ||
+        perfilDni.enListaInhabilitados;
+
+    final calificacion = client?['buro_rating']?.toString() ?? perfilDni.calificacion;
+
     final reason = blacklist?['reason']?.toString() ??
-        blacklist?['motivo']?.toString();
+        blacklist?['motivo']?.toString() ??
+        (perfilDni.enListaInhabilitados
+            ? 'Registrado en lista de inhabilitados del sistema financiero'
+            : null);
 
     final report = BuroReportModel(
       dni: normalized,
       clientName: name,
       calificacionSbs: score,
-      calificacionSbsLabel: _sbsLabel(score),
+      calificacionSbsLabel: _labelFromCalificacion(calificacion, score),
       deudaTotal: deudaTotal,
       mayorDeuda: mayorDeuda,
       diasMora: diasMora,
@@ -66,20 +76,22 @@ class ConsultaBuroService {
     }
   }
 
-  static String _sbsLabel(int score) {
-    if (score >= 700) return 'A - Normal';
-    if (score >= 500) return 'B - Con problemas potenciales';
-    return 'C - Deficiente';
-  }
-
-  int _demoScoreFromDni(String dni) {
-    final hash = dni.codeUnits.fold<int>(0, (a, b) => a + b);
-    return 520 + (hash % 280);
-  }
-
-  double _demoDebt(int score) {
-    if (score >= 700) return 1200;
-    if (score >= 600) return 4500;
-    return 9800;
+  static String _labelFromCalificacion(String calificacion, int score) {
+    switch (calificacion.toUpperCase()) {
+      case 'NORMAL':
+        return 'NORMAL — Sin mora relevante';
+      case 'CPP':
+        return 'CPP — Con problemas de pago';
+      case 'DEFICIENTE':
+        return 'DEFICIENTE — Morosidad significativa';
+      case 'DUDOSO':
+        return 'DUDOSO — Alto riesgo';
+      case 'PERDIDA':
+        return 'PERDIDA — Cartera castigada';
+      default:
+        if (score >= 700) return 'A - Normal';
+        if (score >= 500) return 'B - Con problemas potenciales';
+        return 'C - Deficiente';
+    }
   }
 }
